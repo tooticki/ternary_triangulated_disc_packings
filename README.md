@@ -9,7 +9,7 @@ ternary packing.
 Folder **b** contains the supporting code for the proof of (b):
 > For the cases 1–15, the density is maximized by triangulated binary
 packings. For cases 1–5, it is the triangulated packing of b 8 ; for case
-6 — b 4 ; for cases 7–9 — b 7 ; for cases 10–16 — b 9.
+6 — b 4 ; for cases 7–9 — b 7 ; for cases 10–15 — b 9; for case 19 -- b 6.
 
 Folder **c** contains the supporting code for the proof of (c):
 > For the 40 following cases: 19, 20, 25, 47, 51, 60, 63, 64, 70, 73, 80,
