@@ -12,8 +12,9 @@ packings. For cases 1–5, it is the triangulated packing of b 8 ; for case
 6 — b 4 ; for cases 7–9 — b 7 ; for cases 10–15 — b 9; for case 19 -- b 6.
 
 Folder **c** contains the supporting code for the proof of (c):
-> For the 40 following cases: 19, 20, 25, 47, 51, 60, 63, 64, 70, 73, 80,
-92, 95, 97, 98, 99, 100, 104, 110, 111, 117, 119, 126, 132, 133, 135,
-136, 137, 138, 139, 141, 142, 151, 152, 154, 159, 161, 162, 163, 164,
+> For the 45 following cases: 20, 25, 47, 51,
+60, 63, 64, 70, 73, 80, 81, 84, 92, 95, 96, 97, 98, 99, 100, 104,106, 110, 111, 117, 119,
+126, 132, 133, 135, 136, 137, 138, 139, 141, 142, 151, 152, 153, 154, 159, 160, 161,
+162, 163, 164,
 there exists a non-triangulated packing denser than any triangulated
 one.
