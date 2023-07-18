@@ -104,15 +104,15 @@ def radius(a,b,c,ra,rb,rc):
 
 def radiusABCD(a,b,c,ra,rb,rc,A,B,C,D):
     S=Ss(a,b,c)
-    if A.contains_zero():
-        if B.contains_zero() or D.contains_zero():
-            raise NameError("A and (B or C) contain zero in radiusABCD")
-        return -C/B-A*C^2/sqrt(D)^3
+    if (A*C).contains_zero():
+        res = 4*A*C/B^2
+        if B.contains_zero() or res.upper()>.78:
+            return (RIF(-infinity, infinity))
+            #raise NameError("A,C and (B or D) contain zero in radiusABCD")
+        return -C/B-4*A*C^2/B^3
     else:
-        r1=(-B-sqrt(D))/(QQ(2)*A)
-        r2=(-B+sqrt(D))/(QQ(2)*A)
-        return r1 if ((r1>0 and r2>r1) or (r2<0)) else r2
-  
+        return (-B-sign(C.lower())*sqrt(D))/(QQ(2)*A)
+    
 def dist(a,b,c,ra,rb,rc,R):
     ''' Signed distance from the center of the support circle of radius R to the edge a '''
     S=Ss(a,b,c)

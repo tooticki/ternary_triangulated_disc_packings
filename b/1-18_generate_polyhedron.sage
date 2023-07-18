@@ -132,7 +132,7 @@ def get_one_polyhedron(q, case):
     
 
         
-def main(case, ptype='1ers'):
+def main(case, ptype='e1rs'):
     global V2, m1, mr, ms, eps, z1, zr, zs, LQ
     init_bin(case)
     
@@ -141,7 +141,7 @@ def main(case, ptype='1ers'):
     V2=M.inverse()*v
 
     #  ------------------------- Polyhedra  -------------------------
-    Pvmeps = get_one_polyhedron(ptype, case)        
+    Pvmeps = get_one_polyhedron(ptype, case).intersection(Polyhedron(ieqs = [[10,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]])) # infi for 19
     return 0
     
 

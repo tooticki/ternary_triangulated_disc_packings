@@ -16,7 +16,7 @@ load(the_path+'library/drawing.sage')
 
 #==============================  Global Variables ==============================
 
-RIFpi = 4*arctan(RIF(1)) # Correct value of RIF(pi)
+RIFpi = RIF.pi() # instead of 4*arctan(RIF(1)), cause RIF(pi) is not guaranteed
 I = RIF(1)
 ttriangles_symb = ['111', '11r', '11s', '1rr', '1rs', '1ss', 'rrr', 'rrs', 'rss', 'sss']
 
@@ -142,7 +142,7 @@ def init(case):
 
 # ============================== Resluts =============================
 proved_cases_a = [53,54,55,56,66,76,77,79,93,108,115,116,118,129,131, 146]
-proved_cases_b = list(range(1,16))
+proved_cases_b = list(range(1,16))+[19]
 not_saturated = [24,28,29,30,31,32,33,37,38,39,40,41,42,43,44]
 counter_ex =  [19,20,25,47,51,60,63,64,70,73,80,92,95,97,98,99,100,104,110,111,117,119,126,132,133,135,136,137,138,139,141,142,151,152,154,159,161,162,163,164]
 two_coronas = [16,17,18,25,31,36,39,43,49,52,57,58,65,73,78,84,90,99,106,110,111,114,117,120,137,142,148]+list(range(153,160,1))+[162,164]

@@ -1,4 +1,4 @@
-RIFpi = 4*arctan(RIF(1))
+RIFpi = RIF.pi() #4*arctan(RIF(1))
 I = RIF(1)
 
 from sage.symbolic.expression_conversions import RingConverter
@@ -73,7 +73,8 @@ bin_case = {
     15:(9, 's1'),
     16:(4, 'r1'),
     17:(5, 's1'),
-    18:(5, 's1')
+    18:(5, 's1'),
+    19:(6, 's1')
 }
 
 def bin_corona(c):
@@ -82,6 +83,8 @@ def bin_corona(c):
         return(('s', "1111"))
     elif bin_num == 5:
         return(('s', "11sss"))
+    elif bin_num == 6:
+        return(('s', "1ss1s"))
     elif bin_num == 7:
         return(('s', "111s"))
     elif bin_num == 8:
@@ -222,30 +225,42 @@ def save_proved():
         save_ter(c)
 
 
+Rprec = RealField(200)
+
+def write_RIF(x):
+    if parent(x) != RIF:
+        return(str(x))
+    return ("RIF("+str(Rprec(x.lower()))+","+str(Rprec(x.upper()))+")")
+
+def qq2str(q):
+    num = q.numerator()
+    den = q.denominator()
+    app = round(q, ndigits=5)
+    return(f'$\\frac{{{num}}}{{{den}}}\\approx {app}$')
 
 def writing():
     name = the_path+"output/"+str(CASE)+"_constants.sage"
-    name_2 = the_path+"output/"+str(CASE)+"_tables.sage"
+    name_2 = the_path+"output/"+str(CASE)+"_tables.txt"
     with open(name,'w') as f:
         f.write("CASE = "+str(CASE)+"\n")
         f.write("r,s = "+write_RIF(r)+","+write_RIF(s)+"\n")
         f.write("d_opt = "+write_RIF((d_opt))+"\n")
         f.write("m1,mr,ms = "+str(m1)+","+str(mr)+","+str(ms)+"\n")
-        f.write("V2 = "+str([n(x) for x in V2])+"\n")
-        f.write("eps = "+str(n(eps))+"\n")
+        f.write("V2 = "+str([x for x in V2])+"\n")
+        f.write("eps = "+str(eps)+"\n")
         f.write("LQ = "+str(LQ)+"\n")
-        f.write("z1,zr,zs = "+str(n(z1))+","+str(n(zr))+","+str(n(zs))+"\n")
+        f.write("z1,zr,zs = "+str(z1)+","+str(zr)+","+str(zs)+"\n")
 
     with open(name_2,'w') as f:
         f.write("CASE = "+str(CASE)+"\n")
-        f.write("eps,m1,mr,ms : &"+str(n(eps))+"&"+str(n(m1))+"&"+str(n(mr))+"&"+str(n(ms))+"\n")
-        f.write("V111,V11r,V11s,V1r1 : &"+str(n(V(I,I,I)))+"&"+str(n(V(I,I,r)))+"&"+str(n(V(I,I,s)))+"&"+str(n(V(I,r,I)))+"\n")
-        f.write("V1rr,V1rs,V1s1,V1sr : &"+str(n(V(I,r,r)))+"&"+str(n(V(I,r,s)))+"&"+str(n(V(I,s,I)))+"&"+str(n(V(I,s,r)))+"\n")
-        f.write("V1ss,Vr1r,Vr1s,Vrrr : &"+str(n(V(I,s,s)))+"&"+str(n(V(r,I,r)))+"&"+str(n(V(r,I,s)))+"&"+str(n(V(r,r,r)))+"\n")
-        f.write("Vrrs,Vrsr,Vrss,Vs1s : &"+str(n(V(r,r,s)))+"&"+str(n(V(r,s,r)))+"&"+str(n(V(r,s,s)))+"&"+str(n(V(s,I,s)))+"\n")
-        f.write("Vsrs,Vsss : &"+str(n(V(s,r,s)))+"&"+str(n(V(s,s,s)))+"\n")
-        f.write("z1,zr,zs : "+str(n(z1))+"&"+str(n(zr))+"&"+str(n(zs))+"\n")	
-        f.write("LQ: 11,1r,1s : "+str(n(LQ[(I,I)][0]))+"&"+str(n(LQ[(I,I)][1]))+"&"+str(n(LQ[(I,r)][0]))+"&"+str(n(LQ[(I,r)][1]))+"&"+str(n(LQ[(I,s)][0]))+"&"+str(n(LQ[(I,s)][1]))+"\n")
-        f.write("LQ: rr,rs,ss : "+str(n(LQ[(r,r)][0]))+"&"+str(n(LQ[(r,r)][1]))+"&"+str(n(LQ[(r,s)][0]))+"&"+str(n(LQ[(r,s)][1]))+"&"+str(n(LQ[(s,s)][0]))+"&"+str(n(LQ[(s,s)][1]))+"\n")
+        f.write("eps,m1,mr,ms : &"+str(qq2str(eps))+"&"+str(qq2str(m1))+"&"+str(qq2str(mr))+"&"+str(qq2str(ms))+"\n")
+        f.write("V111,V11r,V11s,V1r1 : &"+str(qq2str(V(I,I,I)))+"&"+str(qq2str(V(I,I,r)))+"&"+str(qq2str(V(I,I,s)))+"&"+str(qq2str(V(I,r,I)))+"\n")
+        f.write("V1rr,V1rs,V1s1,V1sr : &"+str(qq2str(V(I,r,r)))+"&"+str(qq2str(V(I,r,s)))+"&"+str(qq2str(V(I,s,I)))+"&"+str(qq2str(V(I,s,r)))+"\n")
+        f.write("V1ss,Vr1r,Vr1s,Vrrr : &"+str(qq2str(V(I,s,s)))+"&"+str(qq2str(V(r,I,r)))+"&"+str(qq2str(V(r,I,s)))+"&"+str(qq2str(V(r,r,r)))+"\n")
+        f.write("Vrrs,Vrsr,Vrss,Vs1s : &"+str(qq2str(V(r,r,s)))+"&"+str(qq2str(V(r,s,r)))+"&"+str(qq2str(V(r,s,s)))+"&"+str(qq2str(V(s,I,s)))+"\n")
+        f.write("Vsrs,Vsss : &"+str(qq2str(V(s,r,s)))+"&"+str(qq2str(V(s,s,s)))+"\n")
+        f.write("z1,zr,zs : "+str(qq2str(z1))+"&"+str(qq2str(zr))+"&"+str(qq2str(zs))+"\n")	
+        f.write("LQ: 11,1r,1s : "+str(qq2str(LQ[(I,I)][0]))+"&"+str(qq2str(LQ[(I,I)][1]))+"&"+str(qq2str(LQ[(I,r)][0]))+"&"+str(qq2str(LQ[(I,r)][1]))+"&"+str(qq2str(LQ[(I,s)][0]))+"&"+str(qq2str(LQ[(I,s)][1]))+"\n")
+        f.write("LQ: rr,rs,ss : "+str(qq2str(LQ[(r,r)][0]))+"&"+str(qq2str(LQ[(r,r)][1]))+"&"+str(qq2str(LQ[(r,s)][0]))+"&"+str(qq2str(LQ[(r,s)][1]))+"&"+str(qq2str(LQ[(s,s)][0]))+"&"+str(qq2str(LQ[(s,s)][1]))+"\n")
     print("The constants are written in "+name)
    

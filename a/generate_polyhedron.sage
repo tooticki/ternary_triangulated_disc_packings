@@ -50,7 +50,7 @@ def Vm_polyhedron(q):
     Rifr.<vr1r, vs1s, v1r1, vsrs, v1s1, vrsr> = PolynomialRing(RIF)
     vlist =  [vr1r, vs1s, v1r1, vsrs, v1s1, vrsr]
     ineqs = []
-    l = list(corona_generator(q)) #!!! for 23
+    l = list(corona_generator(q)) 
     print("Polyhedron Vm" + r_name(q) + ": we have " + str(len(l)) + " coronas to check")
     counter,t,t0=0, time.time(), time.time()
     for triangles in l:

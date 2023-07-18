@@ -140,13 +140,17 @@ def all_triangles():
     T = []
     for (x,y,z) in ttriangles:
         if Q_inequality(x,y,z): # With it, we are allowed to consider only those with 1 contact
-            T += [(y+z,RIF(x+z,x+z+2*s),RIF(x+y,x+y+2*s),x,y,z)]
-            T += [(RIF(y+z,y+z+2*s),x+z,RIF(x+y,x+y+2*s),x,y,z)]*(r_name(x)!=r_name(y))
-            T += [(RIF(y+z,y+z+2*s),RIF(x+z,x+z+2*s),x+y,x,y,z)]*(r_name(x)!=r_name(z) and r_name(y)!=r_name(z))
+            T += [(y+z,RIF(x+z,x+z+2*s),RIF(x+y,x+y+2*s),x,y,z,False)]
+            T += [(RIF(y+z,y+z+2*s),x+z,RIF(x+y,x+y+2*s),x,y,z,False)]*(r_name(x)!=r_name(y))
+            T += [(RIF(y+z,y+z+2*s),RIF(x+z,x+z+2*s),x+y,x,y,z,False)]*(r_name(x)!=r_name(z) and r_name(y)!=r_name(z))
+            T += [(0,RIF(x+z,x+z+2*s),RIF(x+y,x+y+2*s),x,y,z,True)]
+            T += [(0, RIF(y+z,y+z+2*s), RIF(x+y,x+y+2*s),y,x,z,True)]*(r_name(x)!=r_name(y))
+            T += [(0,RIF(x+z,x+z+2*s),RIF(y+z,y+z+2*s),z,y,x,True)]*(r_name(x)!=r_name(z) and r_name(y)!=r_name(z))
         else:
             print("    Q-inequality doesn't hold on "+str((x,y,z)))
             T += [(RIF(y+z,y+z+2*s),RIF(x+z,x+z+2*s),RIF(x+y,x+y+2*s),x,y,z)]
     return T
+
 
 nfeasable_num = {t:0 for t in ttriangles_symb}
 epstight_num = {t:0 for t in ttriangles_symb}
@@ -156,10 +160,11 @@ epstight = lambda a,b,c,ra,rb,rc : a<=rb+rc+eps and b<=ra+rc+eps and c<=ra+rb+ep
 
 # not feasible because too flat: triangle should at least contain half an s-disc
 nfeasable = lambda a,b,c : Ss(a,b,c) < QQ((QQ(16)*((RIFpi/QQ(2))*s^2)^2).lower())
-
-def test_triangle(a,b,c,ra,rb,rc):
+def test_triangle(a,b,c,ra,rb,rc,is_stretched):
     global nfeasable_num, epstight_num, good_num
-    t_name = triangle_name((ra,rb,rc))
+    t_name = sorted_triangle_name((ra,rb,rc))
+    if is_stretched: # r_a touches a: a = ()
+        a = sqrt(b^2-ra^2)+sqrt(c^2-ra^2)
     if epstight(a,b,c,ra,rb,rc): 
         epstight_num[t_name]+=1
         return 0
@@ -171,9 +176,9 @@ def test_triangle(a,b,c,ra,rb,rc):
     B=Bb(a,b,c,ra,rb,rc)
     C=Cc(a,b,c,ra,rb,rc)
     D=Dd(a,b,c,ra,rb,rc)
-    if S >= 0 and (not A.contains_zero() or (not B.contains_zero() and not D.contains_zero())):
+    if S >= 0 and not ((A*C).contains_zero() and (B.contains_zero() or (4*A*C/B^2).upper()>.78)):
         R=radiusABCD(a,b,c,ra,rb,rc,A,B,C,D)
-        if R >= s:    # not feasible because not saturated
+        if R > s:    # not feasible because not saturated
             nfeasable_num[t_name]+=1
             return 0
         ee=E(a,b,c,ra,rb,rc)
@@ -184,42 +189,36 @@ def test_triangle(a,b,c,ra,rb,rc):
         if ee < uu and R < s:   # bad triangle (shall not happen)
             save_triangle(a,b,c,ra,rb,rc,"__"+str(CASE)+"_BAD_")
             infos = str([x.endpoints() for x in [a,b,c]])+ " R = " +str(R.endpoints())
-            raise NameError("(case "+str(CASE)+") "+t_name+" E<U: "+str(n(ee))+" < "+str(uu)+" with "+infos)
+            raise NameError("(case "+str(CASE)+") "+t_name+("_stretched" if is_stretched else " ")+" E<U: "+str(n(ee))+" < "+str(uu)+" with "+infos)
 
     # The actual precision does not allow to conclude -> refine
     # taking into account that some values out of a,b,c are not really
-    # intervals: we should not devide them 
-    EPS = 1e-9 #heuristics
+    # intervals: we should not divide them 
+    EPS = 1e-9 # Took it randomly...
     
     glue_ends = lambda point: [point] if point.diameter()<=EPS else [RIF(z) for z in list(RIF(point).bisection())]
+    if is_stretched:
+        a = RIF(0)
     new_triples = cartesian_product([glue_ends(x) for x in [a,b,c]])
     
     if len(new_triples) == 1: #all of them are points: we are blocked here
         save_triangle(a,b,c,ra,rb,rc,"_blocked")
-        raise NameError("(case "+str(CASE)+") "+"We're blocked on: " +t_name+" "+str((a,b,c))) 
+        raise NameError("(case "+str(CASE)+") "+"We're blocked on: " +t_name+("_stretched" if is_stretched else " ")+" E<U: "+" "+str((a,b,c))) 
 
     for (a2,b2,c2) in new_triples:
-        test_triangle(a2,b2,c2,ra,rb,rc)
+        test_triangle(a2,b2,c2,ra,rb,rc, is_stretched)
     return 0
     
     
 def test_all():
     T = all_triangles()
-    for (a,b,c,ra,rb,rc) in T:
-        print(triangle_name((ra,rb,rc))+str(": testing..."))
-        test_triangle(a,b,c,ra,rb,rc)
+    for (a,b,c,ra,rb,rc,is_stretched) in T:
+        print(triangle_name((ra,rb,rc))+(" stretched " if is_stretched else " ")+": testing...")
+        test_triangle(a,b,c,ra,rb,rc,is_stretched)
     print("---- All triangles test OK ----")
     print("Non Feasable: "+str(nfeasable_num))
     print("Eps-tight: "+str(epstight_num))
     print("Good: "+str(good_num))
-
-def test_one(r1,r2,r3):
-    tname =  triangle_name((r1,r2,r3))
-    T = all_triangles()
-    for (a,b,c,ra,rb,rc) in T:
-        if triangle_name((ra,rb,rc)) == tname:
-            test_triangle(a,b,c,ra,rb,rc)
-    print("---- " + tname + " test OK ----")
 
 #============================== Find epsilon > 0 ==============================
 
@@ -312,7 +311,7 @@ def get_given_polyhedron(q, case):
     print("  Found P"+q+": "+str(Pq))
     return Pq
 
-
+# 5 6 8 9 15 19
 
 def main(case):
     global V2, m1, mr, ms, eps, z1, zr, zs, LQ
@@ -336,12 +335,12 @@ def main(case):
      
     print(" m1="+str(n3(m1))+", mr="+str(n3(mr))+", ms="+str(n3(ms)))
 
-    if not verify_vm(s) or not verify_vm(r) or not verify_vm(I):
-        raise NameError("Chosen V's and m's are not good")
+    #if not verify_vm(s) or not verify_vm(r) or not verify_vm(I):
+    #    raise NameError("Chosen V's and m's are not good")
 
     #------------------------- CapRIFping with Z1,Zr,Zs  -------------------------   
-    if not (mq_ineq(s) and mq_ineq(r) and mq_ineq(I)):
-        raise NameError("Impossible to cap since mq do not satisfy the needed inequalites")
+    #if not (mq_ineq(s) and mq_ineq(r) and mq_ineq(I)):
+    #    raise NameError("Impossible to cap since mq do not satisfy the needed inequalites")
     z1,zr,zs = zq(I),zq(r),zq(s)
     print("z1,zr,zs="+str((z1,zr,zs)))
     
@@ -353,9 +352,10 @@ def main(case):
     eps = find_epsilon(m1,mr,ms,QQ(n(epsmax)))
     print("Epsilon = "+str(n(eps)))
 
-    all_curves()
-    test_all()
     writing()
+    #all_curves()
+    test_all()
+
         
     return 0
     

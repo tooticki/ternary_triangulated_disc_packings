@@ -3,8 +3,11 @@ the_path = ""
 # Main functions
 load(the_path+"ternary_main_functions.sage")
 
+# Conversions and simplifying
 from sage.symbolic.expression_conversions import RingConverter
 SR2RIF = RingConverter(RIF)
+
+NR = lambda x: (RIF(x-1/2^54, x)).simplest_rational() 
 
 #============================== Choosing values V,m,eps =============================
 
@@ -21,9 +24,9 @@ def choose_point(P):
     return the_point
 
 def verify_vm(q):
-    '''since we reduced the number of inequalities to build Vmp1,Vmpr,Vmps, we
-    still need to make sure that the choose m's and vijk satisfy ALL the
-    m-inequalities. That is why we use this function'''
+    '''since the polyhedron Pe1rs is an approximation, we still need to
+    make sure that the choosen m1,mr,ms and vijk satisfy ALL the
+    m-inequalities. '''
     print("    Checking m"+r_name(q)+"...")
     mq = mq_value(q)
     timer = time.time()
@@ -42,7 +45,7 @@ def verify_vm(q):
 
 def find_epsilon_rec(a, b, lb1, lbr, lbs):
     ''' Recurrence : true on a and false on b'''
-    if b-a < 0.0000000001:
+    if b-a < QQ(0.0000000001):
         if a>0:
             return a
         else:
@@ -76,8 +79,8 @@ def test_eps(mm1,mmr,mms,eps):
 
 
 def get_polyhedron(q, case):
-    
-    Pq = load(the_path+"output/"+str(case)+"_P_"+q+".sobj")
+    Pq = load(the_path+"output/"+str(case)+"_P_"+q+".sobj") #tmp
+    #Pq = load(the_path+"output/"+str(case)+"_P_"+q+".sobj")
     print("  Found P"+q+": "+str(Pq))
 
     return Pq
@@ -132,7 +135,7 @@ def mq_ineq(q):
             return False
     return(True)
 
-zq = lambda q : QQ( max([  (-2 * RIFpi * V(*t)/tight_angle(t)).upper() for t in tripl(q) ]))
+zq = lambda q : QQ( max([  (-2 * RIFpi * V(*t)/tight_angle(t)).upper() for t in tripl(q) ])+1/2^53)
 
 
 #============================== Testing on all triangles ==============================
@@ -145,9 +148,12 @@ def all_triangles():
     T = []
     for (x,y,z) in ttriangles:
         if Q_inequality(x,y,z): # With it, we are allowed to consider only those with 1 contact
-            T += [(y+z,RIF(x+z,x+z+2*s),RIF(x+y,x+y+2*s),x,y,z)]
-            T += [(RIF(y+z,y+z+2*s),x+z,RIF(x+y,x+y+2*s),x,y,z)]*(r_name(x)!=r_name(y))
-            T += [(RIF(y+z,y+z+2*s),RIF(x+z,x+z+2*s),x+y,x,y,z)]*(r_name(x)!=r_name(z) and r_name(y)!=r_name(z))
+            T += [(y+z,RIF(x+z,x+z+2*s),RIF(x+y,x+y+2*s),x,y,z,False)]
+            T += [(RIF(y+z,y+z+2*s),x+z,RIF(x+y,x+y+2*s),x,y,z,False)]*(r_name(x)!=r_name(y))
+            T += [(RIF(y+z,y+z+2*s),RIF(x+z,x+z+2*s),x+y,x,y,z,False)]*(r_name(x)!=r_name(z) and r_name(y)!=r_name(z))
+            T += [(0,RIF(x+z,x+z+2*s),RIF(x+y,x+y+2*s),x,y,z,True)]
+            T += [(0, RIF(y+z,y+z+2*s), RIF(x+y,x+y+2*s),y,x,z,True)]*(r_name(x)!=r_name(y))
+            T += [(0,RIF(x+z,x+z+2*s),RIF(y+z,y+z+2*s),z,y,x,True)]*(r_name(x)!=r_name(z) and r_name(y)!=r_name(z))
         else:
             print("    Q-inequality doesn't hold on "+str((x,y,z)))
             T += [(RIF(y+z,y+z+2*s),RIF(x+z,x+z+2*s),RIF(x+y,x+y+2*s),x,y,z)]
@@ -162,9 +168,11 @@ epstight = lambda a,b,c,ra,rb,rc : a<=rb+rc+eps and b<=ra+rc+eps and c<=ra+rb+ep
 # not feasible because too flat: triangle should at least contain half an s-disc
 nfeasable = lambda a,b,c : Ss(a,b,c) < QQ((QQ(16)*((RIFpi/QQ(2))*s^2)^2).lower())
 
-def test_triangle(a,b,c,ra,rb,rc):
+def test_triangle(a,b,c,ra,rb,rc,is_stretched):
     global nfeasable_num, epstight_num, good_num
-    t_name = triangle_name((ra,rb,rc))
+    t_name = sorted_triangle_name((ra,rb,rc))
+    if is_stretched: # r_a touches a: a = ()
+        a = sqrt(b^2-ra^2)+sqrt(c^2-ra^2)
     if epstight(a,b,c,ra,rb,rc): 
         epstight_num[t_name]+=1
         return 0
@@ -176,9 +184,9 @@ def test_triangle(a,b,c,ra,rb,rc):
     B=Bb(a,b,c,ra,rb,rc)
     C=Cc(a,b,c,ra,rb,rc)
     D=Dd(a,b,c,ra,rb,rc)
-    if S >= 0 and (not A.contains_zero() or (not B.contains_zero() and not D.contains_zero())):
+    if S >= 0 and not ((A*C).contains_zero() and (B.contains_zero() or (4*A*C/B^2).upper()>.78)):
         R=radiusABCD(a,b,c,ra,rb,rc,A,B,C,D)
-        if R >= s:    # not feasible because not saturated
+        if R > s:    # not feasible because not saturated
             nfeasable_num[t_name]+=1
             return 0
         ee=E(a,b,c,ra,rb,rc)
@@ -189,30 +197,32 @@ def test_triangle(a,b,c,ra,rb,rc):
         if ee < uu and R < s:   # bad triangle (shall not happen)
             save_triangle(a,b,c,ra,rb,rc,"__"+str(CASE)+"_BAD_")
             infos = str([x.endpoints() for x in [a,b,c]])+ " R = " +str(R.endpoints())
-            raise NameError("(case "+str(CASE)+") "+t_name+" E<U: "+str(n(ee))+" < "+str(uu)+" with "+infos)
+            raise NameError("(case "+str(CASE)+") "+t_name+("_stretched" if is_stretched else " ")+" E<U: "+str(n(ee))+" < "+str(uu)+" with "+infos)
 
     # The actual precision does not allow to conclude -> refine
     # taking into account that some values out of a,b,c are not really
-    # intervals: we should not devide them 
+    # intervals: we should not divide them 
     EPS = 1e-9 # Took it randomly...
     
     glue_ends = lambda point: [point] if point.diameter()<=EPS else [RIF(z) for z in list(RIF(point).bisection())]
+    if is_stretched:
+        a = RIF(0)
     new_triples = cartesian_product([glue_ends(x) for x in [a,b,c]])
     
     if len(new_triples) == 1: #all of them are points: we are blocked here
         save_triangle(a,b,c,ra,rb,rc,"_blocked")
-        raise NameError("(case "+str(CASE)+") "+"We're blocked on: " +t_name+" "+str((a,b,c))) 
+        raise NameError("(case "+str(CASE)+") "+"We're blocked on: " +t_name+("_stretched" if is_stretched else " ")+" E<U: "+" "+str((a,b,c))) 
 
     for (a2,b2,c2) in new_triples:
-        test_triangle(a2,b2,c2,ra,rb,rc)
+        test_triangle(a2,b2,c2,ra,rb,rc, is_stretched)
     return 0
     
     
 def test_all():
     T = all_triangles()
-    for (a,b,c,ra,rb,rc) in T:
-        print(triangle_name((ra,rb,rc))+str(": testing..."))
-        test_triangle(a,b,c,ra,rb,rc)
+    for (a,b,c,ra,rb,rc,is_stretched) in T:
+        print(triangle_name((ra,rb,rc))+(" stretched " if is_stretched else " ")+": testing...")
+        test_triangle(a,b,c,ra,rb,rc,is_stretched)
     print("---- All triangles test OK ----")
     print("Non Feasable: "+str(nfeasable_num))
     print("Eps-tight: "+str(epstight_num))
@@ -228,7 +238,7 @@ def test_one(r1,r2,r3):
 
 def testing_cases_from_list(l):
     for c in l:
-        load('/home/tooticki/Research/DiscPacking/DiscPacking/code/rewritten_ternary/ternary_general.sage')
+        load('ternary_general.sage')
         with open("testing_results.txt", "a") as myfile:
             myfile.write(str(c))
             try:
@@ -242,7 +252,47 @@ def testing_cases_from_list(l):
                 myfile.write(" not OK"+str(err)+"\n")
         reset()
     print("DONE")
-        
+
+Rprec = RealField(200)
+
+def write_RIF(x):
+    if parent(x) != RIF:
+        return(str(x))
+    return ("RIF("+str(Rprec(x.lower()))+","+str(Rprec(x.upper()))+")")
+
+def qq2str(q):
+    num = q.numerator()
+    den = q.denominator()
+    app = round(q, ndigits=5)
+    return(f'$\\frac{{{num}}}{{{den}}}\\approx {app}$')
+
+def writing():
+    name = the_path+"output/"+str(CASE)+"_constants.sage"
+    name_2 = the_path+"output/"+str(CASE)+"_tables.txt"
+    with open(name,'w') as f:
+        f.write("CASE = "+str(CASE)+"\n")
+        f.write("r,s = "+write_RIF(r)+","+write_RIF(s)+"\n")
+        f.write("d_opt = "+write_RIF((d_opt))+"\n")
+        f.write("m1,mr,ms = "+str(m1)+","+str(mr)+","+str(ms)+"\n")
+        f.write("V2 = "+str([x for x in V2])+"\n")
+        f.write("eps = "+str(eps)+"\n")
+        f.write("LQ = "+str(LQ)+"\n")
+        f.write("z1,zr,zs = "+str(z1)+","+str(zr)+","+str(zs)+"\n")
+
+    with open(name_2,'w') as f:
+        f.write("CASE = "+str(CASE)+"\n")
+        f.write("eps,m1,mr,ms : &"+str(qq2str(eps))+"&"+str(qq2str(m1))+"&"+str(qq2str(mr))+"&"+str(qq2str(ms))+"\n")
+        f.write("V111,V11r,V11s,V1r1 : &"+str(qq2str(V(I,I,I)))+"&"+str(qq2str(V(I,I,r)))+"&"+str(qq2str(V(I,I,s)))+"&"+str(qq2str(V(I,r,I)))+"\n")
+        f.write("V1rr,V1rs,V1s1,V1sr : &"+str(qq2str(V(I,r,r)))+"&"+str(qq2str(V(I,r,s)))+"&"+str(qq2str(V(I,s,I)))+"&"+str(qq2str(V(I,s,r)))+"\n")
+        f.write("V1ss,Vr1r,Vr1s,Vrrr : &"+str(qq2str(V(I,s,s)))+"&"+str(qq2str(V(r,I,r)))+"&"+str(qq2str(V(r,I,s)))+"&"+str(qq2str(V(r,r,r)))+"\n")
+        f.write("Vrrs,Vrsr,Vrss,Vs1s : &"+str(qq2str(V(r,r,s)))+"&"+str(qq2str(V(r,s,r)))+"&"+str(qq2str(V(r,s,s)))+"&"+str(qq2str(V(s,I,s)))+"\n")
+        f.write("Vsrs,Vsss : &"+str(qq2str(V(s,r,s)))+"&"+str(qq2str(V(s,s,s)))+"\n")
+        f.write("z1,zr,zs : "+str(qq2str(z1))+"&"+str(qq2str(zr))+"&"+str(qq2str(zs))+"\n")	
+        f.write("LQ: 11,1r,1s : "+str(qq2str(LQ[(I,I)][0]))+"&"+str(qq2str(LQ[(I,I)][1]))+"&"+str(qq2str(LQ[(I,r)][0]))+"&"+str(qq2str(LQ[(I,r)][1]))+"&"+str(qq2str(LQ[(I,s)][0]))+"&"+str(qq2str(LQ[(I,s)][1]))+"\n")
+        f.write("LQ: rr,rs,ss : "+str(qq2str(LQ[(r,r)][0]))+"&"+str(qq2str(LQ[(r,r)][1]))+"&"+str(qq2str(LQ[(r,s)][0]))+"&"+str(qq2str(LQ[(r,s)][1]))+"&"+str(qq2str(LQ[(s,s)][0]))+"&"+str(qq2str(LQ[(s,s)][1]))+"\n")
+    print("The constants are written in "+name)
+   
+    
 def do_things(case):
     global V2, m1, mr, ms, eps, z1, zr, zs, LQ
     init(case)
@@ -257,17 +307,17 @@ def do_things(case):
     #  ------------------------- Choose a point Vm -------------------------
     vm_point = choose_point(Pvmeps) # 7 free variables
 
-    m1,mr,ms = vm_point[-3:]
+    m1,mr,ms = map(NR, vm_point[-3:])
     
     v_dict = {v:val for v,val in zip([vr1r,vs1s,v1r1,vsrs,v1s1,vrsr], vm_point[:-3])}
     V2 = V2.subs(v_dict) # get rid of variables
-    V2 = [QQ(RIF(x).center()) for x in V2]
+    V2 = [NR(QQ(RIF(x).center())) for x in V2]
     print(list(map((lambda x: (x,n3(v_dict[x]))),v_dict)))
      
     print(" m1="+str(n3(m1))+", mr="+str(n3(mr))+", ms="+str(n3(ms)))
 
-    if not verify_vm(s) or not verify_vm(r) or not verify_vm(I):
-        raise NameError("Chosen V's and m's are not good")
+    #if not verify_vm(s) or not verify_vm(r) or not verify_vm(I):
+    #    raise NameError("Chosen V's and m's are not good")
 
     #------------------------- CapRIFping with Z1,Zr,Zs  -------------------------   
     if not (mq_ineq(s) and mq_ineq(r) and mq_ineq(I)):
@@ -280,14 +330,20 @@ def do_things(case):
 
     #  ------------------------- Find epsilon > 0  ------------------------- 
     epsmax = min(s/2, min([l for (l,q) in list(LQ.values())]))
-    eps = find_epsilon(m1,mr,ms,QQ(n(epsmax)))
+    eps = NR(find_epsilon(m1,mr,ms,QQ(n(epsmax))))
+    if not test_eps(m1,mr,ms,eps):
+        raise NameError("Epsilon rounding NR was not precise enough")
+    
     print("Epsilon = "+str(n(eps)))
 
 
-    save_curves_for_paper()
+    #save_curves_for_paper()
+    #writing()
     test_all()
-    writing()
+
         
     return 0
     
 
+#proved_cases_a = [53,54,55,56,66,76,77,79,93,108,115,116,118,129,131, 146]
+#TODO   131,146
